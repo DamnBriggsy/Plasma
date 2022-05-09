@@ -62,7 +62,6 @@ from . import xKIExtChatCommands
 from .xKIConstants import *
 from .xKIHelpers import *
 
-
 ## A class to process all the RT Chat functions of the KI.
 class xKIChat(object):
 
@@ -664,16 +663,25 @@ class xKIChat(object):
         self.ResetFadeState()
 
     ## Display a status message to the player (or players if net-propagated).
-    def DisplayStatusMessage(self, statusMessage, netPropagate=0):
+    def DisplayStatusMessage(self, message, netPropagate=0):
 
         cFlags = ChatFlags(0)
         cFlags.toSelf = True
         cFlags.status = True
+        cFlags.lockey = isinstance(message, LocKey)
+
+        localPlayer = PtGetLocalPlayer()
+
         if netPropagate:
             plyrList = self.GetPlayersInChatDistance()
             if len(plyrList) > 0:
-                PtSendRTChat(PtGetLocalPlayer(), plyrList, statusMessage, cFlags.flags)
-        self.AddChatLine(None, statusMessage, cFlags)
+                PtSendRTChat(localPlayer, plyrList, message if not cFlags.lockey else ":".join(message), cFlags.flags)
+
+        # the message is just a localization key and needs processing before display
+        if cFlags.lockey:
+            message = PtGetLocalizedString(message.message, [localPlayer.getPlayerName(), PtGetLocalizedString(message.pronoun)])
+
+        self.AddChatLine(None, message, cFlags)
 
     ###########
     # Players #
@@ -784,6 +792,11 @@ class ChatFlags:
         else:
             self.__dict__["subtitle"] = False
 
+        if flags & kRTChatLocKeyMsg:
+            self.__dict__["lockey"] = True
+        else:
+            self.__dict__["lockey"] = False
+
         self.__dict__["channel"] = (kRTChatChannelMask & flags) / 256
 
     def __setattr__(self, name, value):
@@ -831,6 +844,11 @@ class ChatFlags:
             if value:
                 self.__dict__["flags"] |= kRTChatAudioSubtitleMsg
 
+        elif name == "lockey":
+            self.__dict__["flags"] &= kRTChatFlagMask ^ kRTChatLocKeyMsg
+            if value:
+                self.__dict__["flags"] |= kRTChatLocKeyMsg
+
         elif name == "channel":
             flagsNoChannel = self.__dict__["flags"] & kRTChatNoChannel
             self.__dict__["flags"] = flagsNoChannel + (value * 256)
@@ -856,6 +874,8 @@ class ChatFlags:
             string += "neighbors "
         if self.subtitle:
             string += "subtitle "
+        if self.lockey:
+            string += "lockey "
         if self.ccrBcast:
             string += "ccrBcast "
         string += "channel = {} ".format(self.channel)
@@ -940,18 +960,9 @@ class CommandsProcessor:
                     PtAvatarEnterAnimMode(emote[0])
                 else:
                     PtEmoteAvatar(emote[0])
-                if PtGetLanguage() == PtLanguage.kEnglish:
-                    avatar = PtGetLocalAvatar()
-                    gender = avatar.avatar.getAvatarClothingGroup()
-                    if gender > kFemaleClothingGroup:
-                        gender = kMaleClothingGroup
-                    hisHer = PtGetLocalizedString("KI.EmoteStrings.His")
-                    if gender == kFemaleClothingGroup:
-                        hisHer = PtGetLocalizedString("KI.EmoteStrings.Her")
-                    statusMsg = PtGetLocalizedString(emote[1], [PtGetLocalPlayer().getPlayerName(), hisHer])
-                else:
-                    statusMsg = PtGetLocalizedString(emote[1], [PtGetLocalPlayer().getPlayerName()])
-                self.chatMgr.DisplayStatusMessage(statusMsg, 1)
+
+                pronounKey = xLocTools.GetLocalAvatarPossessivePronounLocKey()
+                self.chatMgr.DisplayStatusMessage(LocKey(emote[1], pronounKey), netPropagate=True)
 
                 # Get remaining message string after emote command
                 message = message[len(words[0]):]
@@ -1217,6 +1228,18 @@ class CommandsProcessor:
             return
         PtChangePassword(newPassword)
 
+    ## Update the Chronicle's KI Text Color values.
+    # This uses an RGB triplet with parts separated by "," or an empty string for the default chat color.
+    def UpdateTextColorChronicle(self):
+
+        vault = ptVault()
+        newVal = ""
+        if isinstance(self.chatMgr.chatTextColor, ptColor):
+            newVal = f"{self.chatMgr.chatTextColor.getRed()},{self.chatMgr.chatTextColor.getGreen()},{self.chatMgr.chatTextColor.getBlue()}"
+
+        PtDebugPrint(f"xKIChat.UpdateTextColorChronicle(): Setting KI Text Color chronicle to: \"{newVal}\".", level=kWarningLevel)
+        vault.addChronicleEntry(kChronicleKITextColor, kChronicleKITextColorType, newVal)
+
     ## Overrides the chat area text colors to be a single user-selected color
     def SetTextColor(self, arg1, arg2=None, arg3=None):
 
@@ -1239,6 +1262,7 @@ class CommandsProcessor:
             colorBlue = clamp(colorBlue, 0, 255)
             colorGreen = clamp(colorGreen, 0, 255)
             self.chatMgr.chatTextColor = ptColor(colorRed / 255.0, colorBlue / 255.0, colorGreen / 255.0)
+            self.UpdateTextColorChronicle()
             self.chatMgr.DisplayStatusMessage(PtGetLocalizedString("KI.Chat.TextColorSetValue", [f"({colorRed}, {colorBlue}, {colorGreen})"]))
             return
 
@@ -1255,6 +1279,7 @@ class CommandsProcessor:
             colorBlue = clamp(colorBlue, 0.0, 1.0)
             colorGreen = clamp(colorGreen, 0.0, 1.0)
             self.chatMgr.chatTextColor = ptColor(colorRed, colorBlue, colorGreen)
+            self.UpdateTextColorChronicle()
             self.chatMgr.DisplayStatusMessage(PtGetLocalizedString("KI.Chat.TextColorSetValue", [f"({colorRed}, {colorBlue}, {colorGreen})"]))
             return
 
@@ -1263,10 +1288,12 @@ class CommandsProcessor:
             # newColor is a valid localized color name with a corresponding function on the ptColor class
             colorFn = getattr(ptColor(), kColorNames[newColor])
             self.chatMgr.chatTextColor = colorFn()
+            self.UpdateTextColorChronicle()
             self.chatMgr.DisplayStatusMessage(PtGetLocalizedString("KI.Chat.TextColorSetValue", [newColor]))
         elif newColor == PtGetLocalizedString("KI.Commands.ChatSetTextColorDefaultArg"):
             # user requested resetting text colors to defaults
             self.chatMgr.chatTextColor = None
+            self.UpdateTextColorChronicle()
             self.chatMgr.DisplayStatusMessage(PtGetLocalizedString("KI.Chat.TextColorSetDefault"))
         else:
             hexColor = newColor.lstrip("#")
@@ -1285,6 +1312,7 @@ class CommandsProcessor:
                     return
                 else:
                     self.chatMgr.chatTextColor = ptColor(colorRed, colorBlue, colorGreen)
+                    self.UpdateTextColorChronicle()
                     self.chatMgr.DisplayStatusMessage(PtGetLocalizedString("KI.Chat.TextColorSetValue", [f"#{hexColor}"]))
             else: 
                 # argument was not 3 or 6 characters long, so it cannot be a valid hexadecimal color

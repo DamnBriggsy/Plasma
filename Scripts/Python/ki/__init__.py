@@ -997,21 +997,24 @@ class xKI(ptModifier):
             if cFlags.broadcast and cFlags.channel != self.chatMgr.privateChatChannel:
                 return
 
-            # Is the message from an ignored plaer?
+            # Is the message from an ignored player?
             vault = ptVault()
             ignores = vault.getIgnoreListFolder()
             if ignores is not None and ignores.playerlistHasPlayer(player.getPlayerID()):
                 return
+
+            if cFlags.lockey:
+                keys = LocKey(*message.split(":"))
+                message = PtGetLocalizedString(keys.message, [player.getPlayerName(), PtGetLocalizedString(keys.pronoun)])
 
             # Display the message if it passed all the above checks.
             self.chatMgr.AddChatLine(player, message, cFlags, forceKI=not self.sawTheKIAtLeastOnce)
 
             # If they are AFK and the message was directly to them, send back their state to sender.
             try:
-                if self.KIDisabled or PtGetLocalAvatar().avatar.getCurrentMode() == PtBrainModes.kAFK and cFlags.private and not cFlags.toSelf:
-                    myself = PtGetLocalPlayer()
-                    AFKSelf = ptPlayer(myself.getPlayerName() + PtGetLocalizedString("KI.Chat.AFK"), myself.getPlayerID())
-                    PtSendRTChat(AFKSelf, [player], " ", cFlags.flags)
+                if (self.KIDisabled or PtGetLocalAvatar().avatar.getCurrentMode() == PtBrainModes.kAFK) and cFlags.private and not cFlags.lockey:
+                    cFlags.lockey = True
+                    PtSendRTChat(PtGetLocalPlayer(), [player], "KI.Chat.AFK", cFlags.flags)
             except NameError:
                 pass
 
@@ -1339,6 +1342,7 @@ class xKI(ptModifier):
         self.DetermineKILevel()
         self.DetermineKIFlags()
         self.DetermineGZ()
+        self.DetermineTextColor()
 
         # Hide all dialogs first.
         KIMicroBlackbar.dialog.hide()
@@ -1638,6 +1642,28 @@ class xKI(ptModifier):
                 control.setStringW(self.chatMgr.MessageCurrentLine)
                 control.end()
                 control.refresh()
+
+    #~~~~~~~~~~~~~~~~~#
+    #  KI Text Color  #
+    #~~~~~~~~~~~~~~~~~#
+
+    ## Sets the KI Text Color from the Chronicle.
+    def DetermineTextColor(self):
+
+        vault = ptVault()
+        entry = vault.findChronicleEntry(kChronicleKITextColor)
+        if entry is not None:
+            colorStr = entry.chronicleGetValue()
+            PtDebugPrint(f"xKI.DetermineTextColor(): KI Text Color is: \"{colorStr}\".", level=kWarningLevel)
+            args = colorStr.split(",")
+            try:
+                self.chatMgr.chatTextColor = ptColor(float(args[0]), float(args[1]), float(args[2]))
+            except (IndexError, ValueError):
+                # format is incorrect -- didn't have 3 values, or values weren't floats -- so log an error and destroy all evidence
+                PtDebugPrint(f"xKI.DetermineTextColor(): KI Text Color was not in the expected triplet format", level=kWarningLevel)
+                vault.addChronicleEntry(kChronicleKITextColor, kChronicleKITextColorType, "")
+
+
 
     #~~~~~~~~~~#
     # GZ Games #
