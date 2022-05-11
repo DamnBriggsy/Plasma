@@ -97,13 +97,17 @@ kYeeshaPage23 = 223
 kYeeshaPage24 = 224
 kYeeshaPage25 = 225
 kYeeshaPage26 = 226
+kYeeshaPage27 = 227
+kYeeshaPage28 = 228
 kYeeshaPageCancel = 299
 
 YeeshaPageIDList = [ kYeeshaPage01, kYeeshaPage02, kYeeshaPage03, kYeeshaPage04,\
                     kYeeshaPage05, kYeeshaPage06, kYeeshaPage07, kYeeshaPage08,\
                     kYeeshaPage09, kYeeshaPage10, kYeeshaPage12, kYeeshaPage13,\
                     kYeeshaPage14, kYeeshaPage15, kYeeshaPage16, kYeeshaPage17,\
-                    kYeeshaPage18, kYeeshaPage19, kYeeshaPage20, kYeeshaPage21, kYeeshaPage22, kYeeshaPage23, kYeeshaPage24, kYeeshaPage25, kYeeshaPage26 ]
+                    kYeeshaPage18, kYeeshaPage19, kYeeshaPage20, kYeeshaPage21, \
+                    kYeeshaPage22, kYeeshaPage23, kYeeshaPage24, kYeeshaPage25, \
+                    kYeeshaPage26, kYeeshaPage27, kYeeshaPage28 ]
 
 
 class xYeeshaPages(ptModifier):
@@ -236,6 +240,8 @@ class xYeeshaPages(ptModifier):
         ptGUIControlButton(mydialog.getControlFromTag(kYeeshaPage24)).hide()
         ptGUIControlButton(mydialog.getControlFromTag(kYeeshaPage25)).hide()
         ptGUIControlButton(mydialog.getControlFromTag(kYeeshaPage26)).hide()
+        ptGUIControlButton(mydialog.getControlFromTag(kYeeshaPage27)).hide()
+        ptGUIControlButton(mydialog.getControlFromTag(kYeeshaPage28)).hide()
 
         #now draw correct panel
         if (PageNumber.value) == 1:
@@ -288,6 +294,10 @@ class xYeeshaPages(ptModifier):
             ptGUIControlButton(mydialog.getControlFromTag(kYeeshaPage25)).show()
         elif (PageNumber.value) == 26:
             ptGUIControlButton(mydialog.getControlFromTag(kYeeshaPage26)).show()
+        elif (PageNumber.value) == 27:
+            ptGUIControlButton(mydialog.getControlFromTag(kYeeshaPage27)).show()
+        elif (PageNumber.value) == 28:
+            ptGUIControlButton(mydialog.getControlFromTag(kYeeshaPage28)).show()
 
 
         else:
