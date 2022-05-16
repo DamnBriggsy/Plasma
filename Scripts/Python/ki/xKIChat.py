@@ -638,10 +638,6 @@ class xKIChat(object):
 
                 chatArea.moveCursor(PtGUIMultiLineDirection.kBufferEnd)
 
-                # Write to the log file.
-                if self.chatLogFile is not None and self.chatLogFile.isOpen():
-                    self.chatLogFile.write(chatHeaderFormatted[0:] + chatMessageFormatted)
-
                 # If the chat is overflowing, erase the first line.
                 if chatArea.getBufferSize() > kChat.MaxChatSize:
                     while chatArea.getBufferSize() > kChat.MaxChatSize and chatArea.getBufferSize() > 0:
@@ -658,6 +654,10 @@ class xKIChat(object):
                     # flash the down arrow to indicate that new chat has come in
                     self.incomingChatFlashState = 3
                     PtAtTimeCallback(self.key, 0.0, kTimers.IncomingChatFlash)
+
+        # Write to the log file.
+        if self.chatLogFile is not None and self.chatLogFile.isOpen():
+            self.chatLogFile.write(chatHeaderFormatted[0:] + chatMessageFormatted)
 
         # Update the fading controls.
         self.ResetFadeState()
@@ -1253,7 +1253,7 @@ class CommandsProcessor:
             colorRed = int(arg1)
             colorBlue = int(arg2)
             colorGreen = int(arg3)
-        except ValueError:
+        except (TypeError, ValueError):
             # arguments weren't valid integer numbers, so we will try treating them as floats below
             pass
         else:
@@ -1270,7 +1270,7 @@ class CommandsProcessor:
             colorRed = float(arg1)
             colorBlue = float(arg2)
             colorGreen = float(arg3)
-        except ValueError:
+        except (TypeError, ValueError):
             # arguments weren't valid float numbers, so we will try treating arg1 as a string below
             pass
         else:
