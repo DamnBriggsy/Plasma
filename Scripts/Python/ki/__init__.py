@@ -1653,15 +1653,20 @@ class xKI(ptModifier):
         vault = ptVault()
         entry = vault.findChronicleEntry(kChronicleKITextColor)
         if entry is not None:
-            colorStr = entry.chronicleGetValue()
-            PtDebugPrint(f"xKI.DetermineTextColor(): KI Text Color is: \"{colorStr}\".", level=kWarningLevel)
-            args = colorStr.split(",")
-            try:
-                self.chatMgr.chatTextColor = ptColor(float(args[0]), float(args[1]), float(args[2]))
-            except (IndexError, ValueError):
-                # format is incorrect -- didn't have 3 values, or values weren't floats -- so log an error and destroy all evidence
-                PtDebugPrint(f"xKI.DetermineTextColor(): KI Text Color was not in the expected triplet format", level=kWarningLevel)
-                vault.addChronicleEntry(kChronicleKITextColor, kChronicleKITextColorType, "")
+            if colorStr := entry.chronicleGetValue():
+                PtDebugPrint(f"xKI.DetermineTextColor(): KI Text Color is: \"{colorStr}\".", level=kWarningLevel)
+                args = colorStr.split(",")
+                try:
+                    self.chatMgr.chatTextColor = ptColor(float(args[0]), float(args[1]), float(args[2]))
+                except (IndexError, ValueError):
+                    # format is incorrect -- didn't have 3 values, or values weren't floats -- so log an error and destroy all evidence
+                    PtDebugPrint(f"xKI.DetermineTextColor(): KI Text Color was not in the expected triplet format", level=kWarningLevel)
+                    vault.addChronicleEntry(kChronicleKITextColor, kChronicleKITextColorType, "")
+                return
+
+        # reset to None if there is no set value, otherwise could be carried over from user's previous character
+        self.chatMgr.chatTextColor = None
+        PtDebugPrint("xKI.DetermineTextColor(): KI Text Color is not overridden.", level=kWarningLevel)
 
 
 
@@ -3437,14 +3442,14 @@ class xKI(ptModifier):
                 self.BKGettingPlayerID = False
             elif self.BKRightSideMode == kGUI.BKJournalExpanded:
                 KIJournalExpanded.dialog.show()
-                if self.IsContentMutable(self.BKCurrentContent):
+                if self.IsContentDeletableAndMovable(self.BKCurrentContent):
                     self.BigKIInvertToFolderButtons()
                 else:
                     self.BigKIOnlySelectedToButtons()
                 self.BKGettingPlayerID = False
             elif self.BKRightSideMode == kGUI.BKPictureExpanded:
                 KIPictureExpanded.dialog.show()
-                if self.IsContentMutable(self.BKCurrentContent):
+                if self.IsContentDeletableAndMovable(self.BKCurrentContent):
                     self.BigKIInvertToFolderButtons()
                 else:
                     self.BigKIOnlySelectedToButtons()
@@ -3484,7 +3489,7 @@ class xKI(ptModifier):
                 self.BKGettingPlayerID = False
             elif self.BKRightSideMode == kGUI.BKMarkerListExpanded:
                 KIMarkerFolderExpanded.dialog.show()
-                if self.IsContentMutable(self.BKCurrentContent):
+                if self.IsContentDeletableAndMovable(self.BKCurrentContent):
                     self.BigKIInvertToFolderButtons()
                 else:
                     self.BigKIOnlySelectedToButtons()
@@ -3532,12 +3537,12 @@ class xKI(ptModifier):
         if self.BKRightSideMode == kGUI.BKListMode:
             self.BigKIOnlySelectedToButtons()
         elif self.BKRightSideMode == kGUI.BKJournalExpanded:
-            if self.IsContentMutable(self.BKCurrentContent):
+            if self.IsContentDeletableAndMovable(self.BKCurrentContent):
                 self.BigKIInvertToFolderButtons()
             else:
                 self.BigKIOnlySelectedToButtons()
         elif self.BKRightSideMode == kGUI.BKPictureExpanded:
-            if self.IsContentMutable(self.BKCurrentContent):
+            if self.IsContentDeletableAndMovable(self.BKCurrentContent):
                 self.BigKIInvertToFolderButtons()
             else:
                 self.BigKIOnlySelectedToButtons()
@@ -3564,7 +3569,7 @@ class xKI(ptModifier):
         elif self.BKRightSideMode == kGUI.BKAgeOwnerExpanded:
             self.BigKIOnlySelectedToButtons()
         elif self.BKRightSideMode == kGUI.BKMarkerListExpanded:
-            if self.MFdialogMode not in (kGames.MFEditing, kGames.MFEditingMarker) and self.IsContentMutable(self.BKCurrentContent):
+            if self.MFdialogMode not in (kGames.MFEditing, kGames.MFEditingMarker) and self.IsContentDeletableAndMovable(self.BKCurrentContent):
                 self.BigKIInvertToFolderButtons()
             else:
                 self.BigKIOnlySelectedToButtons()
@@ -3694,14 +3699,12 @@ class xKI(ptModifier):
             return True
         return False
 
-    ## Determines whether the content Node Reference is mutable.
+    ## Determines whether the content Node Reference is mutable (editable).
     def IsContentMutable(self, nodeRef):
 
         # Get its parent folder.
         if isinstance(nodeRef, ptVaultNodeRef):
-            folder = self.BKCurrentContent.getParent()
-            item = self.BKCurrentContent.getChild()
-            if folder and item:
+            if (folder := self.BKCurrentContent.getParent()) and (item := self.BKCurrentContent.getChild()):
                 # Observed: sometimes, the creator ID is zero. This can mean either a DRC item or
                 # a poorly initialized node. Better check against the saver ID as well, which is
                 # used to display the From field.
@@ -3712,6 +3715,18 @@ class xKI(ptModifier):
                 if creatorID != PtGetLocalClientID():
                     return False
                 if folder := folder.upcastToFolderNode():
+                    if folder.folderGetType() == PtVaultStandardNodes.kGlobalInboxFolder:
+                        return False
+        return True
+
+    ## Determines whether the content Node Reference is deletable (and by extension movable to other folders).
+    def IsContentDeletableAndMovable(self, nodeRef):
+
+        # Get its parent folder.
+        if isinstance(nodeRef, ptVaultNodeRef):
+            if (folder := self.BKCurrentContent.getParent()) and (item := self.BKCurrentContent.getChild()):
+                if folder := folder.upcastToFolderNode():
+                    # Global inbox items should *not* be able to be deleted or moved
                     if folder.folderGetType() == PtVaultStandardNodes.kGlobalInboxFolder:
                         return False
         return True
@@ -4518,8 +4533,9 @@ class xKI(ptModifier):
         if self.BKCurrentContent is None:
             PtDebugPrint("xKI.BigKIDisplayJournalEntry(): self.BKCurrentContent is None.", level=kErrorLevel)
             return
-        if self.IsContentMutable(self.BKCurrentContent):
+        if self.IsContentDeletableAndMovable(self.BKCurrentContent):
             jrnDeleteBtn.show()
+        if self.IsContentMutable(self.BKCurrentContent):
             jrnNote.unlock()
             if not self.BKInEditMode or self.BKEditField != kGUI.BKEditFieldJRNTitle:
                 jrnTitleBtn.show()
@@ -4596,10 +4612,10 @@ class xKI(ptModifier):
         if self.BKCurrentContent is None:
             PtDebugPrint("xKI.BigKIDisplayPicture(): self.BKCurrentContent is None.", level=kErrorLevel)
             return
-        if self.IsContentMutable(self.BKCurrentContent):
+        if self.IsContentDeletableAndMovable(self.BKCurrentContent):
             picDeleteBtn.show()
-            if not self.BKInEditMode or self.BKEditField != kGUI.BKEditFieldPICTitle:
-                picTitleBtn.show()
+        if self.IsContentMutable(self.BKCurrentContent) and (not self.BKInEditMode or self.BKEditField != kGUI.BKEditFieldPICTitle):
+            picTitleBtn.show()
         else:
             picTitleBtn.hide()
         element = self.BKCurrentContent.getChild()
@@ -4778,14 +4794,16 @@ class xKI(ptModifier):
     ## Prepares the display of a marker game, as it may be loading.
     def BigKIDisplayMarkerGame(self):
 
-        # Make sure that the player can view this game.
-        if self.gKIMarkerLevel < kKIMarkerNormalLevel:
-            self.BigKIDisplayMarkerGameMessage(PtGetLocalizedString("KI.MarkerGame.pendingActionUpgradeKI"))
-            return
-
         # Save some typing.
         mgr = self.markerGameManager
         getControl = KIMarkerFolderExpanded.dialog.getControlFromTag
+        mbtnDelete = ptGUIControlButton(getControl(kGUI.MarkerFolderDeleteBtn))
+
+        # Make sure that the player can view this game.
+        if self.gKIMarkerLevel < kKIMarkerNormalLevel:
+            self.BigKIDisplayMarkerGameMessage(PtGetLocalizedString("KI.MarkerGame.pendingActionUpgradeKI"))
+            mbtnDelete.show()
+            return
 
         # Initialize the markerGameDisplay to the currently selected game.
         # But first, ensure that the player meets all the necessary criteria.
@@ -4840,7 +4858,6 @@ class xKI(ptModifier):
         mrkfldStatus = ptGUIControlTextBox(getControl(kGUI.MarkerFolderStatus))
         mrkfldTitle = ptGUIControlTextBox(getControl(kGUI.MarkerFolderTitleText))
         mrkfldTitleBtn = ptGUIControlButton(getControl(kGUI.MarkerFolderTitleBtn))
-        mbtnDelete = ptGUIControlButton(getControl(kGUI.MarkerFolderDeleteBtn))
         mbtnGameTimePullD = ptGUIControlButton(getControl(kGUI.MarkerFolderTimePullDownBtn))
         mtbGameType = ptGUIControlTextBox(getControl(kGUI.MarkerFolderGameTypeTB))
         mbtnGameTypePullD = ptGUIControlButton(getControl(kGUI.MarkerFolderTypePullDownBtn))
@@ -4874,10 +4891,7 @@ class xKI(ptModifier):
         # Is the player merely looking at a Marker Game?
         if self.MFdialogMode == kGames.MFOverview:
             mrkfldTitleBtn.disable()
-            if self.IsContentMutable(self.BKCurrentContent):
-                mbtnDelete.show()
-            else:
-                mbtnDelete.hide()
+            mbtnDelete.show()
             mbtnGameTimePullD.hide()
             mbtnGameTimeArrow.hide()
             if element.getCreatorNodeID() == PtGetLocalClientID():
@@ -4934,7 +4948,7 @@ class xKI(ptModifier):
                 mlbMarkerList.unlock()
 
                 # Refresh the scroll position
-                self.BigKIMarkerListScrollVis(True)
+                self.BigKIMarkerListScrollVis(bool(mgr.markers))
                 mlbMarkerList.setScrollPos(self.MFScrollPos)
 
                 mlbMarkerTextTB.hide()
@@ -5016,7 +5030,6 @@ class xKI(ptModifier):
             mtbPlayEnd.show()
             mlbMarkerList.clearAllElements()
             mlbMarkerList.show()
-            self.BigKIMarkerListScrollVis(True)
 
             # Assume that the game is finished, unless an unseen Marker is still left.
             questGameFinished = True
@@ -5032,6 +5045,10 @@ class xKI(ptModifier):
                     mlbMarkerList.addStringW("[{}:{},{},{}] {}".format(FilterAgeName(age), torans, hSpans, vSpans, xCensor.xCensor(desc, self.censorLevel)))
                 else:
                     questGameFinished = False
+
+            self.BigKIMarkerListScrollVis(bool(mgr.markers_captured))
+            mlbMarkerList.setScrollPos(self.MFScrollPos)
+
             mlbMarkerTextTB.hide()
 
         # Refresh the text of the buttons (color changed).
@@ -6073,7 +6090,7 @@ class xKI(ptModifier):
             plID = control.getTagID()
             # Is it one of the buttons?
             if plID == kGUI.BKIPLYDeleteButton:
-                PtLocalizedYesNoDialog(self.HandleBigKIDeleteConfirmation, "KI.Messages.DeletePlayer", self.BKCurrentContentTitle)
+                PtLocalizedYesNoDialog(self.HandleBigKIDeleteConfirmation, "KI.Messages.DeletePlayer", self.BKCurrentContentTitle, self.BKFolderListOrder[self.BKFolderSelected])
             elif plID == kGUI.BKIPLYPlayerIDEditBox:
                 self.BigKICheckSavePlayer()
         elif event == kFocusChange:
