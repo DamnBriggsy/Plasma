@@ -39,63 +39,16 @@ You can contact Cyan Worlds, Inc. by email legal@cyan.com
       Mead, WA   99021
 
 *==LICENSE==*/
-#ifndef pfMarkerInfo_h_inc
-#define pfMarkerInfo_h_inc
 
-#include "hsGeometry3.h"
+#include "plKickableLog.h"
 
-#include "pnKeyedObject/plKey.h"
-
-class plGameMarkerModifier;
-class plMessage;
-class plUoid;
-
-class pfMarkerInfo
-{
-public:
-    enum MarkerType { kMarkerOpen, kMarkerGreen, kMarkerRed, kMarkerLocal, kMarkerLocalSelected };
-
-protected:
-    // MarkerMgr will set this up
-    static plUoid fMarkerUoid;
-
-    plKey fKey;
-    plGameMarkerModifier* fMod;
-    hsPoint3 fPosition;
-    MarkerType fType;
-    double fLastChange; // Last time this marker changed hands
-    bool fVisible;
-    bool fIsNew;
-    bool fSpawned;
-
-    void IPlayBounce(bool play);
-    void IPlayColor(bool play);
-    void IPlaySound(bool place);
-
-public:
-    pfMarkerInfo(const hsPoint3& pos, bool isNew);
-    ~pfMarkerInfo() { Remove(); }
-
-    static void Init();
-
-    plKey GetKey() { return fKey; }
-
-    void Spawn(MarkerType type);
-    void InitSpawned(plKey markerKey);
-    void Remove();
-
-    void Update(double curTime);
-
-    void Show(bool show);
-    bool IsVisible() { return fVisible; }
-
-    void SetType(pfMarkerInfo::MarkerType type);
-    pfMarkerInfo::MarkerType GetType() { return fType; }
-
-    void SetFrozen(double freezeStartTime);
-    bool IsFrozen() { return fLastChange != 0; }
-
-    void PlayHitSound() { IPlaySound(false); }
-};
-
-#endif // pfMarkerInfo_h_inc
+#if !defined(USE_KICKABLE_LOG) && !defined(PLASMA_EXTERNAL_RELEASE)
+    plStatusLog* plKickableLog::sLog = nullptr;
+#else
+    plStatusLog* plKickableLog::sLog = plStatusLogMgr::GetInstance().CreateStatusLog(
+        25,
+        "Kickables.log",
+        (plStatusLog::kFilledBackground | plStatusLog::kDeleteForMe |
+         plStatusLog::kDontWriteFile)
+    );
+#endif

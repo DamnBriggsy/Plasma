@@ -196,18 +196,7 @@ inline double hsSwapEndianDouble(double dvalue)
     return value.f;
 }
 
-#if LITTLE_ENDIAN
-    #define hsToBE16(n)         hsSwapEndian16(n)
-    #define hsToBE32(n)         hsSwapEndian32(n)
-    #define hsToBE64(n)         hsSwapEndian64(n)
-    #define hsToBEFloat(n)      hsSwapEndianFloat(n)
-    #define hsToBEDouble(n)     hsSwapEndianDouble(n)
-    #define hsToLE16(n)         (n)
-    #define hsToLE32(n)         (n)
-    #define hsToLE64(n)         (n)
-    #define hsToLEFloat(n)      (n)
-    #define hsToLEDouble(n)     (n)
-#else
+#ifdef HS_BIG_ENDIAN
     #define hsToBE16(n)         (n)
     #define hsToBE32(n)         (n)
     #define hsToBE64(n)         (n)
@@ -218,6 +207,17 @@ inline double hsSwapEndianDouble(double dvalue)
     #define hsToLE64(n)         hsSwapEndian64(n)
     #define hsToLEFloat(n)      hsSwapEndianFloat(n)
     #define hsToLEDouble(n)     hsSwapEndianDouble(n)
+#else
+    #define hsToBE16(n)         hsSwapEndian16(n)
+    #define hsToBE32(n)         hsSwapEndian32(n)
+    #define hsToBE64(n)         hsSwapEndian64(n)
+    #define hsToBEFloat(n)      hsSwapEndianFloat(n)
+    #define hsToBEDouble(n)     hsSwapEndianDouble(n)
+    #define hsToLE16(n)         (n)
+    #define hsToLE32(n)         (n)
+    #define hsToLE64(n)         (n)
+    #define hsToLEFloat(n)      (n)
+    #define hsToLEDouble(n)     (n)
 #endif
 
 // Generic versions for use in templates
@@ -376,12 +376,6 @@ int hsMessageBoxWithOwner(hsWindowHndl owner, const wchar_t* message, const wcha
 constexpr float hsDegreesToRadians(float deg) { return deg * (hsConstants::pi<float> / 180.f); }
 constexpr float hsRadiansToDegrees(float rad) { return rad * (180.f / hsConstants::pi<float>); }
 constexpr float hsInvert(float a) { return 1.f / a; }
-
-#ifdef _MSC_VER
-#   define ALIGN(n) __declspec(align(n))
-#else
-#   define ALIGN(n) __attribute__((aligned(n)))
-#endif
 
 /************************ Debug/Error Macros **************************/
 

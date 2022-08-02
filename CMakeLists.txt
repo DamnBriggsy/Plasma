@@ -45,9 +45,15 @@ endif(UNIX)
 
 if(APPLE)
     add_definitions(-DHS_BUILD_FOR_APPLE)
+    set(CMAKE_XCODE_GENERATE_SCHEME FALSE)
 
     if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
         add_definitions(-DHS_BUILD_FOR_MACOS)
+
+        option(PLASMA_MAC_UNIVERSAL "Build macOS multi-architecture universal builds?" OFF)
+        if (PLASMA_MAC_UNIVERSAL)
+            set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD)")
+        endif()
     endif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
 endif(APPLE)
 
@@ -168,9 +174,7 @@ endif()
 include(TestBigEndian)
 test_big_endian(BIG_ENDIAN)
 if(BIG_ENDIAN)
-    add_definitions(-DBIG_ENDIAN)
-else()
-    add_definitions(-DLITTLE_ENDIAN)
+    add_definitions(-DHS_BIG_ENDIAN)
 endif()
 
 if(MSVC)
