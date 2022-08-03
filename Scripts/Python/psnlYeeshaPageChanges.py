@@ -53,6 +53,7 @@ from PlasmaTypes import *
 from PlasmaVaultConstants import *
 from PlasmaNetConstants import *
 from xPsnlVaultSDL import *
+import xLinkingBookDefs
 
 PageNumber = ptAttribInt(1, "Yeesha Page Number")
 stringShowStates = ptAttribString(2,"States in which shown")
@@ -63,7 +64,6 @@ respEnable = ptAttribResponder(5, "Enabled resp (if necessary)")
 respDisable = ptAttribResponder(6, "Disabled resp (if necessary)")
 
 #globals
-import xLinkingBookDefs
 TotalPossibleYeeshaPages = len(xLinkingBookDefs.xYeeshaPages)
 HideCleftPole = 0
 
