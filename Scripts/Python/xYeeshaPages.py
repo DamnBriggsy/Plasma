@@ -98,6 +98,7 @@ kYeeshaPage24 = 224
 kYeeshaPage25 = 225
 kYeeshaPage26 = 226
 kYeeshaPage27 = 227
+kYeeshaPage28 = 228
 kYeeshaPageCancel = 299
 
 YeeshaPageIDList = [ kYeeshaPage01, kYeeshaPage02, kYeeshaPage03, kYeeshaPage04,\
@@ -106,7 +107,7 @@ YeeshaPageIDList = [ kYeeshaPage01, kYeeshaPage02, kYeeshaPage03, kYeeshaPage04,
                     kYeeshaPage14, kYeeshaPage15, kYeeshaPage16, kYeeshaPage17,\
                     kYeeshaPage18, kYeeshaPage19, kYeeshaPage20, kYeeshaPage21, \
                     kYeeshaPage22, kYeeshaPage23, kYeeshaPage24, kYeeshaPage25, \
-                    kYeeshaPage26, kYeeshaPage27 ]
+                    kYeeshaPage26, kYeeshaPage27, kYeeshaPage28 ]
 
 
 class xYeeshaPages(ptModifier):
@@ -163,11 +164,11 @@ class xYeeshaPages(ptModifier):
             PtHideDialog(DialogName)
 
             vault = ptVault()
-                
+
             psnlSDL = vault.getPsnlAgeSDL()
             if psnlSDL:
                 YeeshaPageVar = psnlSDL.findVar("YeeshaPage" + str(PageNumber.value))
-                
+
                 PtDebugPrint ("xYeeshaPages.py: The previous value of the SDL variable %s is %s" % ("YeeshaPage" + str(PageNumber.value), YeeshaPageVar.getInt()))
 
                 if StartInCleft():
@@ -178,10 +179,10 @@ class xYeeshaPages(ptModifier):
                 if YeeshaPageVar.getInt() != 0: 
                     PtDebugPrint ("xYeeshaPages.py: You've already found Yeesha Page #%s. Move along. Move along." % (PageNumber.value))
                     return
-                    
+
                 else:
                     PtDebugPrint ("xYeeshaPages.py: Yeesha Page #%s is new to you." % (PageNumber.value))
-                    
+
                     PtDebugPrint ("xYeeshaPages.py: Trying to update the value of the SDL variable %s to 1" % ("YeeshaPage" + str(PageNumber.value)))
                     YeeshaPageVar.setInt(4)
                     vault.updatePsnlAgeSDL (psnlSDL)
@@ -240,6 +241,7 @@ class xYeeshaPages(ptModifier):
         ptGUIControlButton(mydialog.getControlFromTag(kYeeshaPage25)).hide()
         ptGUIControlButton(mydialog.getControlFromTag(kYeeshaPage26)).hide()
         ptGUIControlButton(mydialog.getControlFromTag(kYeeshaPage27)).hide()
+        ptGUIControlButton(mydialog.getControlFromTag(kYeeshaPage28)).hide()
 
         #now draw correct panel
         if (PageNumber.value) == 1:
@@ -294,6 +296,8 @@ class xYeeshaPages(ptModifier):
             ptGUIControlButton(mydialog.getControlFromTag(kYeeshaPage26)).show()
         elif (PageNumber.value) == 27:
             ptGUIControlButton(mydialog.getControlFromTag(kYeeshaPage27)).show()
+        elif (PageNumber.value) == 28:
+            ptGUIControlButton(mydialog.getControlFromTag(kYeeshaPage28)).show()
 
 
         else:
