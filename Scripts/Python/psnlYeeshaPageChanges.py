@@ -238,9 +238,9 @@ class psnlYeeshaPageChanges(ptMultiModifier):
 
             respAudioStop.run(self.key,avatar=None,fastforward=0)
             respDisable.run(self.key,avatar=None,fastforward=1)
-            if len(bushDistrib.value) > 0:
+            if bushDistrib.value:
                 for x in bushDistrib.value:
-                    x.setVisible(0)
+                    x.setVisible(False)
 
 
     def TimeToGrow(self):
