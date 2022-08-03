@@ -62,6 +62,7 @@ GUIDialogObject = ptAttribSceneobject(2, "GUIDialog scene object")
 RespOpen = ptAttribResponder(3, "Open Responder")
 RespLoop = ptAttribResponder(4, "Loop Responder")
 RespClose = ptAttribResponder(5, "Close Responder")
+RespGlow = ptAttribResponder(6, "Glow Responder",['GlowSound','PageTurn'])
 
 #Linking Books GUI tags
 DialogName="YeeshaPageGUI"
@@ -148,20 +149,14 @@ class clftYeeshaPage08(ptModifier):
         if isinstance(control,ptGUIControlButton):
             btnID = control.getTagID()
 
-        if event == kShowHide:
-            if control.isEnabled():
-                #control.show()
-                if self.GotPage():
-                    mydialog = PtGetDialogFromString(DialogName)
-                    ptGUIControlButton(mydialog.getControlFromTag(kYeeshaPage08)).disable()
-
-        elif event == kAction and btnID == kYeeshaPage08:
+        if event == kAction and btnID == kYeeshaPage08:
             PtDebugPrint("DEBUG: clftYeeshaPage08.OnGUINotify():\tPicked up page")
 
             RespClose.run(self.key)
             isOpen = 0
             PtHideDialog(DialogName)
             self.SetStdGUIVisibility(1)
+            RespGlow.run(self.key, state='GlowSound')
     
             if self.GotPage(): 
                 PtDebugPrint ("DEBUG: clftYeeshaPage08.py: You've already found Yeesha Page #8. Move along. Move along.")
@@ -239,3 +234,4 @@ class clftYeeshaPage08(ptModifier):
             ptGUIControlButton(mydialog.getControlFromTag(kYeeshaPage08)).show()
 
             GUIDialogObject.value.draw.disable()
+

@@ -152,7 +152,7 @@ class xYeeshaPages(ptModifier):
         if event == kExitMode:
             PtHideDialog(DialogName)
             return
-        
+
         btnID = 0
         if isinstance(control,ptGUIControlButton):
             btnID = control.getTagID()
@@ -161,7 +161,7 @@ class xYeeshaPages(ptModifier):
             PtDebugPrint("xYeeshaPages.OnGUINotify():\tPicked up page number: ", PageNumber.value)
 #            PtUnloadDialog(DialogName)
             PtHideDialog(DialogName)
-            
+
             vault = ptVault()
                 
             psnlSDL = vault.getPsnlAgeSDL()
