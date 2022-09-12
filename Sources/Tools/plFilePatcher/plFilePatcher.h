@@ -40,32 +40,67 @@ You can contact Cyan Worlds, Inc. by email legal@cyan.com
 
 *==LICENSE==*/
 
-#ifndef HeadSpinConfigHDefined
-#define HeadSpinConfigHDefined
 
-/* Compiler settings */
-#cmakedefine HAVE_BUILTIN_AVAILABLE
-#cmakedefine HAVE_CPUID
-#cmakedefine HAVE_AVX2
-#cmakedefine HAVE_AVX
-#cmakedefine HAVE_SSE42
-#cmakedefine HAVE_SSSE3
-#cmakedefine HAVE_SSE41
-#cmakedefine HAVE_SSE4
-#cmakedefine HAVE_SSE3
-#cmakedefine HAVE_SSE2
-#cmakedefine HAVE_SSE1
+#ifndef _plFilePatcher_inc_
+#define _plFilePatcher_inc_
 
-/* External library usage */
-#cmakedefine USE_EGL
-#cmakedefine USE_SPEEX
-#cmakedefine USE_OPUS
-#cmakedefine USE_VPX
-#cmakedefine USE_WEBM
+#include <string_theory/string>
 
-#cmakedefine HAVE_PTHREAD_TIMEDJOIN_NP
-#cmakedefine HAVE_SYSCTL
-#cmakedefine HAVE_SYSDIR
-#cmakedefine HAVE_SYSINFO
+#include "plFileSystem.h"
+#include "pnNetBase/pnNbProtocol.h"
+#include "pfPatcher/pfPatcher.h"
 
-#endif
+class plFilePatcher
+{
+public:
+    enum
+    {
+        kPatchData          = 0x1,
+        kPatchClient        = 0x2,
+        kPatchEverything    = kPatchData | kPatchClient
+    };
+
+private:
+    enum NetCoreState
+    {
+        kNetCoreInactive,
+        kNetCoreActive,
+        kNetCoreShutdown,
+    };
+
+    uint32_t fFlags;
+    plFileName fServerIni;
+    ST::string fError;
+    NetCoreState fNetCoreState;
+
+    pfPatcher::ProgressTickFunc fProgressFunc;
+    pfPatcher::FileDownloadFunc fDownloadFunc;
+
+    bool ILoadServerIni();
+
+    void IInitNetCore();
+    bool IRunNetCore();
+    void ISignalNetCoreShutdown() { fNetCoreState = kNetCoreShutdown; }
+    void IFiniNetCore();
+    void ISetNetError(const ST::string& err) { fError = err; }
+
+    void IHandleNetError(ENetProtocol protocol, ENetError error);
+    void IRequestFileSrvInfo();
+    void IHandleFileSrvInfo(ENetError result, const ST::string& addr);
+    void IRunPatcher();
+    bool IApproveDownload(const plFileName& file);
+    void IOnPatchComplete(ENetError result, const ST::string& msg);
+
+public:
+    plFilePatcher(plFileName serverIni = ST_LITERAL("server.ini"));
+
+    bool Patch();
+    const ST::string& GetError() const { return fError; }
+
+    void SetPatcherFlags(uint32_t flags) { fFlags = flags; }
+
+    void SetProgressCallback(pfPatcher::ProgressTickFunc cb) { fProgressFunc = std::move(cb); }
+    void SetDownloadBeginCallback(pfPatcher::FileDownloadFunc cb) { fDownloadFunc = std::move(cb); }
+};
+
+#endif //_plFilePatcher_inc_

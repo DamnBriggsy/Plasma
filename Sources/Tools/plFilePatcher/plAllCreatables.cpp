@@ -39,33 +39,10 @@ You can contact Cyan Worlds, Inc. by email legal@cyan.com
       Mead, WA   99021
 
 *==LICENSE==*/
+#include "HeadSpin.h"
 
-#ifndef HeadSpinConfigHDefined
-#define HeadSpinConfigHDefined
+#include "pnFactory/plCreator.h"
 
-/* Compiler settings */
-#cmakedefine HAVE_BUILTIN_AVAILABLE
-#cmakedefine HAVE_CPUID
-#cmakedefine HAVE_AVX2
-#cmakedefine HAVE_AVX
-#cmakedefine HAVE_SSE42
-#cmakedefine HAVE_SSSE3
-#cmakedefine HAVE_SSE41
-#cmakedefine HAVE_SSE4
-#cmakedefine HAVE_SSE3
-#cmakedefine HAVE_SSE2
-#cmakedefine HAVE_SSE1
-
-/* External library usage */
-#cmakedefine USE_EGL
-#cmakedefine USE_SPEEX
-#cmakedefine USE_OPUS
-#cmakedefine USE_VPX
-#cmakedefine USE_WEBM
-
-#cmakedefine HAVE_PTHREAD_TIMEDJOIN_NP
-#cmakedefine HAVE_SYSCTL
-#cmakedefine HAVE_SYSDIR
-#cmakedefine HAVE_SYSINFO
-
-#endif
+#include "pnKeyedObject/pnKeyedObjectCreatable.h"
+#include "pnMessage/pnMessageCreatable.h"
+#include "pnNetCommon/pnNetCommonCreatable.h"
